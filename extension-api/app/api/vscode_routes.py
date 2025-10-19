@@ -141,7 +141,7 @@ async def export_vscode_extensions(
         now = datetime.utcnow()
 
         # Generate the collection view URL
-        base_url = os.getenv("CUR8T_WEB_URL") or "https://www.cur8t.com"        
+        base_url = os.getenv("CUR8T_WEB_URL") or "https://www.cur8t.com"
         collection_view_url_for_db = f"{base_url}/collection/{collection_id}"
 
         created_collection = await execute_insert(

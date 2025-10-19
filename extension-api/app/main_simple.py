@@ -100,7 +100,7 @@ async def export_vscode_extensions(
         raise HTTPException(status_code=400, detail="No extensions provided")
     if len(export_data.extensions) > 1000:  # Reasonable limit
         raise HTTPException(status_code=400, detail="Too many extensions (max: 1000)")
-    
+
     logger.info("🚀 VS CODE EXPORT - Endpoint called")
     logger.info(
         f"🚀 VS CODE EXPORT - Number of extensions: {len(export_data.extensions)}"
