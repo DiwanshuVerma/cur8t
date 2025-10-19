@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, validator
 
-from ..core.database import execute_insert, execute_query_one, execute_query_all
+from ..core.database import execute_insert, execute_query_all, execute_query_one
 from ..core.subscription import subscription_service
 from ..core.utils import limiter
 from ..models.schemas import Collection, CreateCollectionResponse, ErrorResponse
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 # VS Code Extension specific schemas
 class VSCodeExtension(BaseModel):
     id: str
@@ -28,20 +29,24 @@ class VSCodeExtension(BaseModel):
     name: str
     publisher: str
 
+
 class ExportCollectionRequest(BaseModel):
     extensions: List[Dict[str, str]]
     collectionName: Optional[str] = None
     description: Optional[str] = None
+
 
 class ExportCollectionResponse(BaseModel):
     collectionId: str
     collectionUrl: str
     message: str
 
+
 class ValidateResponse(BaseModel):
     userId: str
     email: Optional[str] = None
     username: Optional[str] = None
+
 
 @router.get("/validate", response_model=ValidateResponse)
 @limiter.limit("60/minute")
@@ -52,7 +57,7 @@ async def validate_api_key(
     logger.info(f"[DEBUG] /validate called with header: {authorization}")
 
     """Validate API key and return basic user info"""
-    
+
     try:
         user_id = await get_user_id_from_api_key(authorization)
         logger.info(f"[DEBUG] got user_id: {user_id}")
@@ -73,7 +78,7 @@ async def validate_api_key(
         )
     except HTTPException as e:
         logger.error(f"[HTTPException] {e.detail}")
-        raise e         # Re-raise the real status and message
+        raise e  # Re-raise the real status and message
     except Exception as e:
         logger.error(f"[EXCEPTION] {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -93,7 +98,9 @@ async def export_vscode_extensions(
         raise HTTPException(status_code=400, detail="Too many extensions (max: 1000)")
     """Export VS Code extensions to a Cur8t collection"""
     logger.info("🚀 VS CODE EXPORT - Endpoint called")
-    logger.info(f"🚀 VS CODE EXPORT - Number of extensions: {len(export_data.extensions)}")
+    logger.info(
+        f"🚀 VS CODE EXPORT - Number of extensions: {len(export_data.extensions)}"
+    )
 
     try:
         user_id = await get_user_id_from_api_key(authorization)
@@ -114,8 +121,14 @@ async def export_vscode_extensions(
             )
 
         # Create collection name and description
-        collection_name = export_data.collectionName or f"VS Code Extensions - {datetime.now().strftime('%Y-%m-%d')}"
-        collection_description = export_data.description or f"Exported {len(export_data.extensions)} VS Code extensions on {datetime.now().strftime('%Y-%m-%d')}"
+        collection_name = (
+            export_data.collectionName
+            or f"VS Code Extensions - {datetime.now().strftime('%Y-%m-%d')}"
+        )
+        collection_description = (
+            export_data.description
+            or f"Exported {len(export_data.extensions)} VS Code extensions on {datetime.now().strftime('%Y-%m-%d')}"
+        )
 
         # Create new collection
         collection_id = str(uuid.uuid4())
@@ -127,8 +140,10 @@ async def export_vscode_extensions(
 
         now = datetime.utcnow()
         # Base URL from configuration or environment variable
-        collection_url = os.getenv("VSCODE_MARKETPLACE_URL", "https://marketplace.visualstudio.com")
-        
+        collection_url = os.getenv(
+            "VSCODE_MARKETPLACE_URL", "https://marketplace.visualstudio.com"
+        )
+
         created_collection = await execute_insert(
             insert_collection_query,
             (
@@ -153,7 +168,7 @@ async def export_vscode_extensions(
             try:
                 # Create marketplace URL for the extension
                 marketplace_url = f"https://marketplace.visualstudio.com/items?itemName={extension['id']}"
-                
+
                 # Create link for the extension
                 link_id = str(uuid.uuid4())
                 insert_link_query = """
@@ -164,7 +179,7 @@ async def export_vscode_extensions(
 
                 # Create a descriptive title for the extension
                 link_title = f"{extension['name']} v{extension['version']}"
-                if extension.get('description'):
+                if extension.get("description"):
                     link_title += f" - {extension['description'][:100]}"
 
                 created_link = await execute_insert(
@@ -184,7 +199,9 @@ async def export_vscode_extensions(
                     created_links.append(created_link)
 
             except Exception as e:
-                logger.error(f"❌ Failed to create link for extension {extension['id']}: {str(e)}")
+                logger.error(
+                    f"❌ Failed to create link for extension {extension['id']}: {str(e)}"
+                )
                 continue
 
         # Update collection's total links count
@@ -202,12 +219,14 @@ async def export_vscode_extensions(
         url = os.getenv("CUR8T_WEB_URL") or "https://www.cur8t.com"
         collection_view_url = f"{url}/collection/{collection_id}"
 
-        logger.info(f"🚀 VS CODE EXPORT - Successfully created collection with {len(created_links)} extension links")
+        logger.info(
+            f"🚀 VS CODE EXPORT - Successfully created collection with {len(created_links)} extension links"
+        )
 
         return ExportCollectionResponse(
             collectionId=collection_id,
             collectionUrl=collection_view_url,
-            message=f"Successfully exported {len(created_links)} VS Code extensions to Cur8t collection"
+            message=f"Successfully exported {len(created_links)} VS Code extensions to Cur8t collection",
         )
 
     except HTTPException:
@@ -217,6 +236,7 @@ async def export_vscode_extensions(
         raise HTTPException(
             status_code=500, detail=f"Failed to export VS Code extensions: {str(e)}"
         )
+
 
 @router.get("/user/collections")
 @limiter.limit("60/minute")
@@ -239,9 +259,7 @@ async def get_user_collections(
             LIMIT 20
         """
 
-        collections_result = await execute_query_all(
-            collections_query, (user_id,)
-        )
+        collections_result = await execute_query_all(collections_query, (user_id,))
 
         collections = []
         for col_data in collections_result:
@@ -265,11 +283,11 @@ async def get_user_collections(
             status_code=500, detail=f"Failed to fetch user collections: {str(e)}"
         )
 
+
 @router.get("/collections/{collection_id}")
 @limiter.limit("60/minute")
 async def get_collection_by_id(
-    request: Request,
-    collection_id: str, authorization: Optional[str] = Header(None)
+    request: Request, collection_id: str, authorization: Optional[str] = Header(None)
 ) -> Dict[str, Any]:
     """Get specific collection details"""
     logger.info(f"📁 COLLECTION DETAILS - Endpoint called for ID: {collection_id}")

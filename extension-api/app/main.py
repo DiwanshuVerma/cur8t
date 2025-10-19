@@ -14,8 +14,8 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.api import routes
 from app.api.vscode_routes import router as vscode_router
 from app.core.config import settings
-from app.core.utils import limiter
 from app.core.database import health_check
+from app.core.utils import limiter
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
