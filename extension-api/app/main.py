@@ -12,8 +12,10 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api import routes
+from app.api.vscode_routes import router as vscode_router
 from app.core.config import settings
 from app.core.utils import limiter
+from app.core.database import health_check
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +82,7 @@ app.add_middleware(
 )
 
 app.include_router(routes.router, prefix="/api/v1")
+app.include_router(vscode_router, prefix="/api")
 
 
 # Add root route for status monitoring
