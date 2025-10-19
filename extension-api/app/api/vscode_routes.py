@@ -139,10 +139,10 @@ async def export_vscode_extensions(
         """
 
         now = datetime.utcnow()
-        # Base URL from configuration or environment variable
-        collection_url = os.getenv(
-            "VSCODE_MARKETPLACE_URL", "https://marketplace.visualstudio.com"
-        )
+
+        # Generate the collection view URL
+        base_url = os.getenv("CUR8T_WEB_URL") or "https://www.cur8t.com"        
+        collection_view_url_for_db = f"{base_url}/collection/{collection_id}"
 
         created_collection = await execute_insert(
             insert_collection_query,
@@ -155,7 +155,7 @@ async def export_vscode_extensions(
                 len(export_data.extensions),
                 now,
                 now,
-                collection_url,
+                collection_view_url_for_db,
             ),
         )
 
